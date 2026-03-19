@@ -78,7 +78,24 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api-inference-extens
 
 ## Deploy Ray Serve
 
-Apply the `RayService` manifest to deploy `gemma-2b-it`.
+Apply the `RayService` manifest to deploy `gemma-2b-it` and associated
+networking objects.
+
+This command will create:
+1. A gateway with class `gke-l7-rilb`. See [other types
+   available](https://docs.cloud.google.com/kubernetes-engine/docs/how-to/gatewayclass-capabilities)
+   if tinkering.
+1. An HTTPRoute with sends all traffic on `/` to our inferencepool
+1. An InferencePool, which has a label selector for the worker nodes of our Ray
+   cluster, as well as a reference to the endpoint picker's Service (see below).
+1. A HealthCheckPolicy, which instructs the load balancer to monitor the Ray
+   workers' health to select backends.
+1. The RayService object. This is configured to provision four worker nodes with
+   L4 GPUs and four backend replicas. See serve.py for the complete
+   configuration.
+1. Also in serve.py, we are using a custom request router that inspects for
+   hints from the load balancer (a header named
+   `x-gateway-destination-endpoint`) to direct requests internally.
 
 *Note: The worker nodes use `RAY_SERVE_ENABLE_HA_PROXY=1` to enable improved
 network performance in Ray Serve.*
@@ -89,49 +106,31 @@ kubectl apply -f gemma-2b-it.yaml
 
 ## Configure and Deploy the Endpoint Picker (EPP)
 
-The EPP requires explicit metrics configuration to interpret Ray Serve's custom
-vLLM metrics, and the experimental Data Layer must be enabled. We must also
-configure strict RBAC permissions.
+The EPP requires explicit metrics configuration to interpret Ray Serve's renamed
+vLLM metrics, and the experimental Data Layer must be enabled.
 
-**Step A: Apply the EPP ConfigMap**
-
-The following configuration correctly formats the Ray Prometheus metrics (e.g.,
+The  configuration correctly formats the Ray Prometheus metrics (e.g.,
 `ray_vllm_num_requests_waiting`) as PromQL selectors and places the
 `core-metrics-extractor` securely within the Data Layer configuration.
 
-```bash
-kubectl apply -f epp-config.yaml
-```
-
-**Step B: Apply the EPP Deployment & Service**
 
 Apply the EPP manifest. This manifest includes a custom `ServiceAccount` and
 `Role` that grant the EPP necessary access to `pods`, `inferencepools`, and
 `inferenceobjectives`.
 
+
 ```bash
-kubectl apply -f epp.yaml
+kubectl apply -f endpoint-picker.yaml
 ```
 
 *Note: The EPP container image was built from commit 2faa44c1 from
 https://github.com/kubernetes-sigs/gateway-api-inference-extension if you need
 to produce your own image.*
 
-## Register the Inference Pool
-
-
-Apply:
-`kubectl apply -f inference-pool.yaml`
-
-The inference pool has a label selector that matches the labels added to our Ray
-Cluster's worker template.
-
 ## Test the Deployment
 
 Port-forward or otherwise access your Gateway/Service IP, and send an
 OpenAI-compatible request.
-
-*Note: Ensure your request format uses an array for `messages`.*
 
 ```bash
 kubectl get gateways
@@ -145,5 +144,5 @@ curl http://<YOUR_ENDPOINT>/v1/chat/completions \
 
 You may find [kubectl-curl](https://github.com/spencer-p/kubectl-curl) useful.
 
-Alternatively, you may deploy `ingress.yaml` to test Ray's request routing in
-comparison.
+To test an alternate network path, you may deploy `ingress.yaml` to provision a
+"plain" load balancer and rely completely on Ray's internal routing.

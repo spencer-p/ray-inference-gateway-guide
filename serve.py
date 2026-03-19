@@ -22,7 +22,6 @@ class InferenceGatewayRequestRouter(PowerOfTwoChoicesRequestRouter):
         candidate_replicas: List[RunningReplica],
         pending_request: Optional[PendingRequest] = None,
     ) -> List[List[RunningReplica]]:
-        logger.info(f"igw: routing request for {pending_request}")
         if not pending_request:
           return []
 

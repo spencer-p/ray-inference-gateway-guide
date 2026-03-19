@@ -1,3 +1,75 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gemma-2b-it
+  namespace: default
+spec:
+  gatewayClassName: gke-l7-rilb
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gemma-2b-it
+spec:
+  parentRefs:
+  - name: gemma-2b-it
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: gemma-2b-it
+      group: "inference.networking.k8s.io"
+      kind: InferencePool
+---
+apiVersion: inference.networking.k8s.io/v1
+kind: InferencePool
+metadata:
+  name: gemma-2b-it
+  namespace: default
+spec:
+  endpointPickerRef:
+    failureMode: FailClose
+    group: ""
+    kind: Service
+    name: gemma-2b-it-epp
+    port:
+      number: 9002
+  selector:
+    matchLabels:
+      ray.io/serve: "true"
+      ray.io/node-type: "worker"
+      inferencepool: "gemma-2b-it"
+  targetPorts:
+  - number: 8000
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: gemma-2b-it
+  namespace: default
+spec:
+  default:
+    checkIntervalSec: 2
+    config:
+      httpHealthCheck:
+        port: 8000
+        requestPath: /-/healthz
+      type: HTTP
+    timeoutSec: 2
+  targetRef:
+    group: inference.networking.k8s.io
+    kind: InferencePool
+    name: gemma-2b-it
+---
 apiVersion: ray.io/v1
 kind: RayService
 metadata:
@@ -70,10 +142,8 @@ spec:
                 env:
                   - name: RAY_SERVE_THROUGHPUT_OPTIMIZED
                     value: "1"
-                  - name: RAY_SERVE_ENABLE_DIRECT_INGRESS
-                    value: "1"
                   - name: RAY_SERVE_ENABLE_HA_PROXY
-                    value: "0"
+                    value: "1"
                   - name: HUGGING_FACE_HUB_TOKEN
                     valueFrom:
                       secretKeyRef:
