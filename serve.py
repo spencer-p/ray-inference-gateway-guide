@@ -25,7 +25,7 @@ class InferenceGatewayRequestRouter(PowerOfTwoChoicesRequestRouter):
         pending_request: Optional[PendingRequest] = None,
     ) -> List[List[RunningReplica]]:
         if not pending_request:
-          return []
+            return await super().choose_replicas(candidate_replicas, pending_request)
 
         # Look for RawRequestInfo in arguments to read HTTP headers.
         raw_request_info = None
