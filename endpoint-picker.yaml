@@ -18,7 +18,7 @@ data:
       parameters:
         scheme: "http"
         path: "/"
-    - type: core-metrics-extractor
+    - type: model-server-protocol-metrics
       name: ray-extractor
       parameters:
         defaultEngine: "vllm"
@@ -142,7 +142,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: gcr.io/spencerjp-gke-dev/epp:2faa44c1
+        image: registry.k8s.io/gateway-api-inference-extension/epp:v1.4.0-rc.3
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3

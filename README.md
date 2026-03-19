@@ -117,9 +117,9 @@ Apply the EPP manifest. This manifest includes a custom `ServiceAccount` and
 kubectl apply -f endpoint-picker.yaml
 ```
 
-*Note: The EPP container image was built from commit 2faa44c1 from
-https://github.com/kubernetes-sigs/gateway-api-inference-extension if you need
-to produce your own image.*
+*Note: The EPP container image is the reference endpoint picker; see
+https://github.com/kubernetes-sigs/gateway-api-inference-extension if you would
+like to tinker.*
 
 ## Test the Deployment
 
