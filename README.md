@@ -41,7 +41,7 @@ HUGGING_FACE_TOKEN=  # Your token.
 Create your GKE cluster:
 
 ```
-gke create $CLUSTER \
+gcloud container clusters create $CLUSTER \
   --project $PROJECT \
   --location $LOCATION \
   --release-channel rapid \
@@ -57,7 +57,7 @@ Create a GPU pool with four L4s:
 ```
 gcloud container node-pools create gpu-pool \
     --cluster=$CLUSTER \
-    --region=$LOCATION \
+    --location=$LOCATION \
     --accelerator="type=nvidia-l4,count=1,gpu-driver-version=latest" \
     --machine-type=g2-standard-8 \
     --num-nodes=4
@@ -67,13 +67,7 @@ Deploy your hugging face token to the cluster:
 
 ```
 kubectl create secret generic hf-secret \
-    --from-literal=hf_api_token=${HUGGING_FACE_TOKEN?} \
-```
-
-Install the gateway api CRD:
-
-```
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api-inference-extension/raw/v1.0.0/config/crd/bases/inference.networking.x-k8s.io_inferenceobjectives.yaml
+    --from-literal=hf_api_token=${HUGGING_FACE_TOKEN?}
 ```
 
 ## Deploy Ray Serve
