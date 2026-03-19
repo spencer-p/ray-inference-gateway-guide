@@ -9,26 +9,7 @@ spec:
     applications:
     - name: llm_app
       route_prefix: "/"
-      import_path: ray.serve.llm:build_openai_app
-      args:
-        llm_configs:
-            - model_loading_config:
-                model_id: gemma-2b-it
-                model_source: google/gemma-2b-it
-              accelerator_type: L4
-              log_engine_metrics: true
-              deployment_config:
-                autoscaling_config:
-                    min_replicas: 4
-                    max_replicas: 4
-                health_check_period_s: 600
-                health_check_timeout_s: 300
-                request_router_config:
-                  request_router_class: "ray.serve.llm.request_router.InferenceGatewayRequestRouter"
-              runtime_env:
-                env_vars:
-                    VLLM_USE_V1: "1"
-                    TENSOR_PARALLELISM: "2"
+      import_path: serve:app
   rayClusterConfig:
     headGroupSpec:
       rayStartParams:
@@ -70,6 +51,14 @@ spec:
                     secretKeyRef:
                       name: hf-secret
                       key: hf_api_token
+              volumeMounts:
+                - name: serve-config
+                  mountPath: /home/ray/serve.py
+                  subPath: serve.py
+          volumes:
+            - name: serve-config
+              configMap:
+                name: serve-config
     rayVersion: 2.53.0
     workerGroupSpecs:
       - replicas: 4
@@ -109,5 +98,13 @@ spec:
                     memory: "64Gi"
                     nvidia.com/gpu: "1"
                     ephemeral-storage: "24Gi"
+                volumeMounts:
+                  - name: serve-config
+                    mountPath: /home/ray/serve.py
+                    subPath: serve.py
+            volumes:
+              - name: serve-config
+                configMap:
+                  name: serve-config
             nodeSelector:
               cloud.google.com/gke-accelerator: nvidia-l4
