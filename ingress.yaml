@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gemma-2b-it
+  annotations:
+    kubernetes.io/ingress.class: "gce-internal"
+spec:
+  ingressClassName: "gce-internal"
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gemma-2b-it-serve-svc
+                port:
+                  number: 8000
+---
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: gemma-backend-config
+spec:
+  healthCheck:
+    checkIntervalSec: 15
+    timeoutSec: 15
+    healthyThreshold: 1
+    unhealthyThreshold: 2
+    type: HTTP
+    requestPath: /-/healthz
+    port: 8000

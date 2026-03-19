@@ -1,0 +1,40 @@
+apiVersion: inference.networking.k8s.io/v1
+kind: InferencePool
+metadata:
+  name: gemma-2b-it
+  namespace: default
+spec:
+  endpointPickerRef:
+    failureMode: FailClose
+    group: ""
+    kind: Service
+    name: gemma-2b-it-epp
+    port:
+      number: 9002
+  selector:
+    matchLabels:
+      ray.io/serve: "true"
+      ray.io/node-type: "worker"
+      inferencepool: "gemma-2b-it"
+  targetPorts:
+  - number: 8000
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: gemma-2b-it
+  namespace: default
+spec:
+  default:
+    checkIntervalSec: 2
+    config:
+      httpHealthCheck:
+        port: 8000
+        requestPath: /-/healthz
+      type: HTTP
+    timeoutSec: 2
+  targetRef:
+    group: inference.networking.k8s.io
+    kind: InferencePool
+    name: gemma-2b-it
+
