@@ -1,15 +1,17 @@
 import logging
 from typing import List, Optional
 
-from ray.llm._internal.serve.core.protocol import RawRequestInfo
-from ray.serve._private.request_router.common import PendingRequest
-from ray.serve._private.request_router.pow_2_router import PowerOfTwoChoicesRequestRouter
-from ray.serve._private.request_router.replica_wrapper import RunningReplica
-from ray.util.annotations import PublicAPI
 from ray.serve.llm import build_openai_app
+from ray.serve.request_router import PendingRequest, RunningReplica
+
+from ray.llm._internal.serve.core.protocol import RawRequestInfo
+from ray.serve._private.request_router.pow_2_router import PowerOfTwoChoicesRequestRouter
 
 logger = logging.getLogger(__name__)
 
+# TODO(spencer-p): Ideally the IGW-aware request router would be provided as a
+# mixin from Ray LLM's ray.serve.request_router package. This implementation
+# uses some private apis, like RawRequestInfo and the running replicas' IPs.
 class InferenceGatewayRequestRouter(PowerOfTwoChoicesRequestRouter):
     """Request router that routes to a specific backend IP if a header is present.
 
@@ -25,7 +27,7 @@ class InferenceGatewayRequestRouter(PowerOfTwoChoicesRequestRouter):
         if not pending_request:
           return []
 
-        # Look for RawRequestInfo in arguments or keyword arguments.
+        # Look for RawRequestInfo in arguments to read HTTP headers.
         raw_request_info = None
         for arg in pending_request.args:
             if isinstance(arg, RawRequestInfo):
