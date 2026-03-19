@@ -1,5 +1,3 @@
-# gcr.io/spencerjp-gke-dev/ray/anyscale/ray:2.51.0-slim-py312-cu121-serve0
-# gcr.io/spencerjp-gke-dev/rayturbo/runtime-py312-cu121:2025-11-10-serve0
 apiVersion: ray.io/v1
 kind: RayService
 metadata:
@@ -10,6 +8,8 @@ spec:
     - name: llm_app
       route_prefix: "/"
       import_path: serve:app
+      runtime_env:
+        working_dir: "https://github.com/spencer-p/ray-inference-gateway-guide/archive/main.zip"
   rayClusterConfig:
     headGroupSpec:
       rayStartParams:
@@ -22,7 +22,7 @@ spec:
         spec:
           containers:
             - name: ray-head
-              image: gcr.io/spencerjp-gke-dev/ray-llm:7b2c07aee4
+              image: rayproject/ray-llm:nightly-py311-cu128
               resources:
                 limits:
                   #cpu: "2"
@@ -51,14 +51,6 @@ spec:
                     secretKeyRef:
                       name: hf-secret
                       key: hf_api_token
-              volumeMounts:
-                - name: serve-config
-                  mountPath: /home/ray/serve.py
-                  subPath: serve.py
-          volumes:
-            - name: serve-config
-              configMap:
-                name: serve-config
     rayVersion: 2.53.0
     workerGroupSpecs:
       - replicas: 4
@@ -74,7 +66,7 @@ spec:
           spec:
             containers:
               - name: llm
-                image: gcr.io/spencerjp-gke-dev/ray-llm:7b2c07aee4
+                image: rayproject/ray-llm:nightly-py311-cu128
                 env:
                   - name: RAY_SERVE_THROUGHPUT_OPTIMIZED
                     value: "1"
@@ -98,13 +90,5 @@ spec:
                     memory: "64Gi"
                     nvidia.com/gpu: "1"
                     ephemeral-storage: "24Gi"
-                volumeMounts:
-                  - name: serve-config
-                    mountPath: /home/ray/serve.py
-                    subPath: serve.py
-            volumes:
-              - name: serve-config
-                configMap:
-                  name: serve-config
             nodeSelector:
               cloud.google.com/gke-accelerator: nvidia-l4
