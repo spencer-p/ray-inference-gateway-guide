@@ -18,6 +18,8 @@ data:
       parameters:
         scheme: "http"
         path: "/"
+    # This was renamed after 1.4, see github.com/kubernetes-sigs/gateway-api-inference-extension/pull/2441.
+    #- type: core-metrics-extractor
     - type: model-server-protocol-metrics
       name: ray-extractor
       parameters:

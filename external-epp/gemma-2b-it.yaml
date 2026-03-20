@@ -1,0 +1,164 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gemma-2b-it
+  namespace: default
+spec:
+  gatewayClassName: gke-l7-rilb
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    name: http
+    port: 80
+    protocol: HTTP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gemma-2b-it
+spec:
+  parentRefs:
+  - name: gemma-2b-it
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: "/"
+    backendRefs:
+    - name: gemma-2b-it
+      group: "inference.networking.k8s.io"
+      kind: InferencePool
+---
+apiVersion: inference.networking.k8s.io/v1
+kind: InferencePool
+metadata:
+  name: gemma-2b-it
+  namespace: default
+spec:
+  endpointPickerRef:
+    failureMode: FailClose
+    group: ""
+    kind: Service
+    name: gemma-2b-it-epp
+    port:
+      number: 9002
+  selector:
+    matchLabels:
+      ray.io/serve: "true"
+      ray.io/node-type: "worker"
+      inferencepool: "gemma-2b-it"
+  targetPorts:
+  - number: 8000
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: gemma-2b-it
+  namespace: default
+spec:
+  default:
+    checkIntervalSec: 2
+    config:
+      httpHealthCheck:
+        port: 8000
+        requestPath: /-/healthz
+      type: HTTP
+    timeoutSec: 2
+  targetRef:
+    group: inference.networking.k8s.io
+    kind: InferencePool
+    name: gemma-2b-it
+---
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: gemma-2b-it
+spec:
+  serveConfigV2: |
+    applications:
+    - name: llm_app
+      route_prefix: "/"
+      import_path: external-epp/serve:app
+      runtime_env:
+        working_dir: "https://github.com/spencer-p/ray-inference-gateway-guide/archive/main.zip"
+  rayClusterConfig:
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: "0.0.0.0"
+        num-cpus: "0"
+      template:
+        metadata:
+          labels:
+            ai.gke.io: rayserve
+        spec:
+          containers:
+            - name: ray-head
+              image: rayproject/ray-llm:nightly-py311-cu128
+              resources:
+                limits:
+                  #cpu: "2"
+                  memory: "8Gi"
+                  ephemeral-storage: "32Gi"
+                requests:
+                  cpu: "2"
+                  memory: "8Gi"
+                  ephemeral-storage: "32Gi"
+              ports:
+                - containerPort: 6379
+                  name: gcs-server
+                - containerPort: 8265
+                  name: dashboard
+                - containerPort: 10001
+                  name: client
+                - containerPort: 8000
+                  name: serve
+              env:
+                - name: RAY_SERVE_THROUGHPUT_OPTIMIZED
+                  value: "1"
+                - name: RAY_SERVE_ENABLE_HA_PROXY
+                  value: "1"
+                - name: HUGGING_FACE_HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: hf-secret
+                      key: hf_api_token
+    rayVersion: 2.53.0
+    workerGroupSpecs:
+      - replicas: 4
+        minReplicas: 4
+        maxReplicas: 4
+        groupName: gpu-group
+        rayStartParams: {}
+        template:
+          metadata:
+            labels:
+              ai.gke.io: rayserve
+              inferencepool: gemma-2b-it
+          spec:
+            containers:
+              - name: llm
+                image: rayproject/ray-llm:nightly-py311-cu128
+                env:
+                  - name: RAY_SERVE_THROUGHPUT_OPTIMIZED
+                    value: "1"
+                  - name: RAY_SERVE_ENABLE_HA_PROXY
+                    value: "1"
+                  - name: HUGGING_FACE_HUB_TOKEN
+                    valueFrom:
+                      secretKeyRef:
+                        name: hf-secret
+                        key: hf_api_token
+                resources:
+                  limits:
+                    #cpu: "8"
+                    #memory: "64Gi"
+                    nvidia.com/gpu: "1"
+                    ephemeral-storage: "24Gi"
+                  requests:
+                    cpu: "8"
+                    memory: "64Gi"
+                    nvidia.com/gpu: "1"
+                    ephemeral-storage: "24Gi"
+            nodeSelector:
+              cloud.google.com/gke-accelerator: nvidia-l4
