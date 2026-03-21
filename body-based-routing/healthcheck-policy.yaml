@@ -1,0 +1,41 @@
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: gemma-serve-healthcheck
+  namespace: default
+spec:
+  default:
+    checkIntervalSec: 5
+    timeoutSec: 5
+    healthyThreshold: 2
+    unhealthyThreshold: 2
+    config:
+      type: HTTP
+      httpHealthCheck:
+        port: 8000
+        requestPath: /-/healthz
+  targetRef:
+    group: ""
+    kind: Service
+    name: gemma-2b-it-serve-svc
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: qwen-serve-healthcheck
+  namespace: default
+spec:
+  default:
+    checkIntervalSec: 5
+    timeoutSec: 5
+    healthyThreshold: 2
+    unhealthyThreshold: 2
+    config:
+      type: HTTP
+      httpHealthCheck:
+        port: 8000
+        requestPath: /-/healthz
+  targetRef:
+    group: ""
+    kind: Service
+    name: qwen-25-3b-serve-svc

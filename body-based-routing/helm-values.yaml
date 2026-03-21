@@ -1,0 +1,7 @@
+bbr:
+  plugins:
+    - type: "body-field-to-header"
+      name: "openai-model-extractor"
+      json:
+        field_name: "model"
+        header_name: "X-Gateway-Model-Name"

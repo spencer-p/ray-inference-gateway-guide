@@ -1,7 +1,7 @@
 apiVersion: ray.io/v1
 kind: RayService
 metadata:
-  name: gemma-2b-it
+  name: qwen-25-3b
 spec:
   serveConfigV2: |
     applications:
@@ -11,8 +11,8 @@ spec:
       args:
         llm_configs:
             - model_loading_config:
-                model_id: gemma-2b-it
-                model_source: google/gemma-2b-it
+                model_id: qwen-2.5-3b
+                model_source: Qwen/Qwen2.5-3B
               accelerator_type: L4
               log_engine_metrics: true
               deployment_config:

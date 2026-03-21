@@ -1,7 +1,7 @@
 apiVersion: ray.io/v1
 kind: RayService
 metadata:
-  name: gemma-2b-it
+  name: llama-3-8b
 spec:
   serveConfigV2: |
     applications:
@@ -11,8 +11,8 @@ spec:
       args:
         llm_configs:
             - model_loading_config:
-                model_id: gemma-2b-it
-                model_source: google/gemma-2b-it
+                model_id: llama-3-8b
+                model_source: meta-llama/Meta-Llama-3-8B-Instruct
               accelerator_type: L4
               log_engine_metrics: true
               deployment_config:
