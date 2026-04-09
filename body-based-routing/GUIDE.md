@@ -28,6 +28,9 @@ objects with these services plus a Gateway, we can enable:
    availability or capacity with [multi-cluster Gateways](https://docs.cloud.google.com/kubernetes-engine/docs/concepts/multi-cluster-gateways).
 5. **Separation of concerns**: Separate RayServices can be administered by
    seperate teams, follow seperate rollouts, and run on different topologies.
+6. **Security**: Gateway can act as the SSL terminator to secure your user
+   traffic over the internet: [About Gateway
+   security](https://docs.cloud.google.com/kubernetes-engine/docs/concepts/gateway-security).
 
 TODO: Possibly include diagram from https://docs.google.com/presentation/d/1o6YPTs29bs-8EgrxU-_rwp3UNM5uWR-7a0BDC-Ks6zo/edit?slide=id.g3871ced5037_13_40&resourcekey=0-s4bAqJDhPgovi6TOQFSDXQ#slide=id.g3871ced5037_13_40
 
